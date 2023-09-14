@@ -135,6 +135,7 @@ Is another process using the image [/home/daniele/Development/all-by-my-host/jam
 Yes, machine is running. It sounds good. I just need to check if I am able to access it by console, just to be sure that I can work then on configuring network on the cloned images.
 
 But lets see what I have in a ubuntu image:
+
 ```
 root@ubuntu:~# grep ubuntu /etc/passwd
 root@ubuntu:~# 
@@ -169,6 +170,65 @@ So the plan is:
 2. clone the image with `virsh vol-clone` (5 times)
 3. edit each of those image using `guestmount(1)` (and probably replacing some string into some /etc/-blah-blah-path)
 
+### Safe guestmount/guestunmount
+
+To be safe from race condition, so that the image can be used immediately after mount/change/unmount operation, I
+follow the manpage directions and I write a bash script in `scripts/` folder.
+
+In order to be confortable I change /etc/fuse.conf and uncomment `user_allow_other` line.
+
+Ouop. That is
+
+~~~
+:~/Development/all-by-my-host$ ./scripts/gumount.sh debian-12-genericcloud-amd64.qcow2 mnt/
+both exists
+/home/daniele/Development/all-by-my-host/debian-12-genericcloud-amd64.qcow2
+/home/daniele/Development/all-by-my-host/mnt/
+:~/Development/all-by-my-host$ ls mnt/
+bin  boot  dev  etc  home  lib  lib32  lib64  libx32  lost+found  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+:~/Development/all-by-my-host$ ls -l mnt/
+total 76
+lrwxrwxrwx  1 root root     7 set 10 06:39 bin -> usr/bin
+drwxr-xr-x  4 root root  4096 set 10 06:42 boot
+drwxr-xr-x  2 root root  4096 set 10 06:40 dev
+drwxr-xr-x 64 root root  4096 set 10 06:42 etc
+drwxr-xr-x  2 root root  4096 lug 14 18:00 home
+lrwxrwxrwx  1 root root     7 set 10 06:39 lib -> usr/lib
+lrwxrwxrwx  1 root root     9 set 10 06:39 lib32 -> usr/lib32
+lrwxrwxrwx  1 root root     9 set 10 06:39 lib64 -> usr/lib64
+lrwxrwxrwx  1 root root    10 set 10 06:39 libx32 -> usr/libx32
+drwx------  2 root root 16384 set 10 06:39 lost+found
+drwxr-xr-x  2 root root  4096 set 10 06:39 media
+drwxr-xr-x  2 root root  4096 set 10 06:39 mnt
+drwxr-xr-x  2 root root  4096 set 10 06:39 opt
+drwxr-xr-x  2 root root  4096 lug 14 18:00 proc
+drwx------  3 root root  4096 set 10 06:40 root
+drwxr-xr-x  2 root root  4096 set 10 06:40 run
+lrwxrwxrwx  1 root root     8 set 10 06:39 sbin -> usr/sbin
+drwxr-xr-x  2 root root  4096 set 10 06:39 srv
+drwxr-xr-x  2 root root  4096 lug 14 18:00 sys
+drwxrwxrwt  2 root root  4096 set 10 06:41 tmp
+drwxr-xr-x 14 root root  4096 set 10 06:39 usr
+drwxr-xr-x 11 root root  4096 set 10 06:39 var
+~~~
+
+Check:
+
+~~~
+:~/Development/all-by-my-host$ ./scripts/gu-check.sh 
+3024601 ?        Ss     0:00 guestmount -a debian-12-genericcloud-amd64.qcow2 -m /dev/sda1 --pid-file guestmount.pid -o allow_other mnt/
+3025542 pts/16   S+     0:00 grep 3024601
+~~~
+
+and finally umount:
+
+~~~
+:~/Development/all-by-my-host$ ./scripts/g-umount.sh mnt/
+:~/Development/all-by-my-host$ ./scripts/gu-check.sh 
+3025930 pts/16   S+     0:00 grep 3024601
+:~/Development/all-by-my-host$ ls -l mnt/
+total 0
+~~~
 
 
 ## Network types
