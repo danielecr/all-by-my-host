@@ -230,6 +230,176 @@ and finally umount:
 total 0
 ~~~
 
+### A default user
+
+Now I have to configure a first image from which I am going to clone.
+I want a non-privileged user, I name it `bymyself`, all VMs will have this name.
+
+During the setup of an image is possible to adopt the strategy to make a progressive change history, I think there are tools around for this.
+
+~~~
+:~/Development/all-by-my-host$ virsh snapshot-create-as --domain ubuntu-g1 --disk-only --live before-adduser
+error: Operation not supported: live snapshot creation is supported only during full system snapshots
+
+:~/Development/all-by-my-host$ virsh snapshot-create-as --domain ubuntu-g1 --disk-only before-adduser
+Domain snapshot before-adduser created
+
+:~/Development/all-by-my-host$ virsh snapshot-dumpxml --domain ubuntu-g1 before-adduser | grep source.*before-adduser
+      <source file='/home/daniele/Development/all-by-my-host/jammy-server-cloudimg-amd64.before-adduser'/>
+
+:~/Development/all-by-my-host$ ls -l | grep jammy-server
+-rw------- 1 libvirt-qemu kvm      11665408 set 15 07:50 jammy-server-cloudimg-amd64.before-adduser
+-rw-rw-r-- 1 libvirt-qemu kvm     793903104 set 15 07:42 jammy-server-cloudimg-amd64.img
+~~~
+
+The snapshot is created in the same folder as the source image, but the user:group is libvirt-qemu:kvm, also I did not noticed it
+before: libvirt take the qcow2 image ownership.
+
+For convenience I write a `snapshot-new.sh` script and the relative complete `abmh_complete.sh` to get the list of available domain.
+
+But surprisingly when I try to revert I found it does not work:
+
+~~~
+:~/Development/all-by-my-host$ virsh snapshot-revert --domain ubuntu-g1 --snapshotname before-adduser 
+error: Failed to revert snapshot before-adduser
+error: unsupported configuration: revert to external snapshot not supported yet
+~~~
+
+looking around I found https://virt.fedoraproject.narkive.com/SaNf9XFu/fedora-how-to-revert-an-external-snapshot
+
+That is very strange. The suggestion look like, maybe:
+
+```
+# Create the external snapshot
+virsh snapshot-create $dom --no-metadata --disk-only
+# Copy the base image to bk-host, for an appropriate $copy
+"$copy" host... bk-host...
+# Commit the temporary qcow2 snapshot wrapper back into the main disk
+foreach disk in $dom:
+virsh blockcommit $dom $disk --active --shallow --verbose --pivot
+```
+
+If I look at xml (by editing) I found:
+
+```
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/home/daniele/Development/all-by-my-host/jammy-server-cloudimg-amd64.secondo-primo'/>
+      <backingStore type='file'>
+        <format type='qcow2'/>
+        <source file='/home/daniele/Development/all-by-my-host/jammy-server-cloudimg-amd64.second-before'/>
+        <backingStore type='file'>
+          <format type='qcow2'/>
+          <source file='/home/daniele/Development/all-by-my-host/jammy-server-cloudimg-amd64.before-adduser'/>
+          <backingStore type='file'>
+            <format type='qcow2'/>
+            <source file='/home/daniele/Development/all-by-my-host/jammy-server-cloudimg-amd64.img'/>
+          </backingStore>
+        </backingStore>
+      </backingStore>
+      <target dev='vda' bus='virtio'/>
+      <address type='pci' domain='0x0000' bus='0x04' slot='0x00' function='0x0'/>
+    </disk>
+```
+
+That make sense, because qcow2 is an overlayed storage, but how to deal with it?
+
+And that is maybe where `virsh blockcommit` plays its role. Anyway it is getting too complicated for the focus of this project.
+
+```
+virsh domfsfreeze $dom
+virsh snapshot-create $dom --no-metadata --disk-only
+virsh domfsthaw $dom
+"$copy" host... bk-host...
+```
+
+This look a more effective advice, it imply there is a freeze and a matching thaw operation. Looking around (in manpage) there is a snapshot option, `--quiesce`, that does both operation before and after taking a snapshot. But it requires QEMU Guest Agent.
+
+This goes away from my focus, but it look interesting, so I search for such a staff, I think it is easily supported by ubuntu cloud image, I hope so. Actually doc is from redhat https://access.redhat.com/solutions/732773
+
+Apparently I have `apt-cache show qemu-guest-agent` on host machine, but not in the the cloud image.
+
+I have to wait until I settled up the network staff. Anyway looking at xml is interesting.
+
+The format is documented in libvirt.org website, and this https://libvirt.org/formatdomain.html#network-interfaces is
+the section for network. I want to understand all supported options for network, and this is on-topic for this project
+
+The first thing I notice is
+
+```
+<interface type='bridge'>
+  <mac address='52:54:00:3f:4b:aa'/>
+  <source bridge='virbr0'/>
+  <model type='virtio'/>
+  <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
+</interface>
+```
+
+the option I used 2 days ago, `--network bridge=virbr0,model=virtio` has this kind of xml counter part.
+I do not know what had choosen the mac address, but that is what I see in the guest machine.
+
+So simply bringing up my interface will enable the network access (like if I am in the host: isn't it just a "bridge"?)
+
+I just pass 15 minutes of madness trying to guess why, and what, and how, and why ... thing are ... then I end up trying to dumpxml of net by virsh:
+
+```
+:~/Development/all-by-my-host$ virsh net-dumpxml --network default 
+<network>
+  <name>default</name>
+  <uuid>2b68002e-57eb-4ebc-9755-dd502b18118a</uuid>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='virbr0' stp='on' delay='0'/>
+  <mac address='52:54:00:9e:9f:ce'/>
+  <ip address='192.168.122.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.122.2' end='192.168.122.254'/>
+    </dhcp>
+  </ip>
+</network>
+```
+
+and this is completely arbitrary, I think libvirt take the first available ip for its virbr0 interface, but I could get this from
+
+```
+:~/Development/all-by-my-host$ ip a show dev virbr0 
+4: virbr0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default qlen 1000
+    link/ether 52:54:00:9e:9f:ce brd ff:ff:ff:ff:ff:ff
+    inet 192.168.122.1/24 brd 192.168.122.255 scope global virbr0
+       valid_lft forever preferred_lft forever
+```
+
+So, in the guest:
+```
+root@ubuntu:~# ip link set enp1s0 up
+root@ubuntu:~# ip addr add 192.168.122.2/24 dev enp1s0
+root@ubuntu:~# ip route add default via 192.168.122.1
+```
+
+And I have network.
+
+```
+apt update
+```
+
+... but no dns. It is suggested to edit this file
+
+> root@ubuntu:~# vi /etc/systemd/resolved.conf
+
+but really nothing change, until
+
+> root@ubuntu:~# systemctl restart systemd-resolved.service
+
+and in fact /etc/resolv.conf contains 127.0.0.53, that is the way systemd-resolved receive message from nss-resolve.
+
+Ok, ns resolution is a bit off-topic, but nice to know.
+
+Anyway, I need to calm me down and take my time: networking staff is exactly the skill I want to strengthen.
+
+
 
 ## Network types
 
@@ -240,3 +410,14 @@ First of all, the funny staff.
 is a convenient way to edit the `default`-named network (or any other name other than "default" that is defined).
 
 This similar to `kubectl edit ...`  class of commands, but here the definition is in XML.
+
+
+## Side project
+
+Integrate in mush https://github.com/javanile/mush
+
+by https://github.com/francescobianco/mush-packages
+
+https://github.com/vpenso/libvirt-shell-functions
+https://github.com/goffinet/virt-scripts
+
