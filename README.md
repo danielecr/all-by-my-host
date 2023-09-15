@@ -230,7 +230,7 @@ and finally umount:
 total 0
 ~~~
 
-### A default user
+### A default user (and snapshots)
 
 Now I have to configure a first image from which I am going to clone.
 I want a non-privileged user, I name it `bymyself`, all VMs will have this name.
@@ -425,7 +425,115 @@ talking from the host:
 
 and this means it works. So I eventually I can do an effective and usable snapshot. I hope so.
 
+#### Backup
 
+yes, now I can run with --quiesce, but I do not understand what can I do for restore.
+I check upstream docs https://libvirt.org/formatbackup.html, it talks about checkpoint, and virsh deals that object too.
+But with checkpoint and with backup-begin, still I do not know how to revert!!
+
+I left this dilemma behind me. I go on without snapshotting
+
+#### User
+
+> root@ubuntu:~# adduser bymyself
+
+`bymyself` is the default user with a default password `bymyself`, it has uid 1000 and gid 1000
+
+(bymyself is an horrible name, I know, whenever I will automate this task I need to pick another user name)
+
+### More on network
+
+I am used to NetworkManager, because I am a mostly a desktop user, but in the guest machine:
+
+```
+root@ubuntu:~# systemctl status systemd-networkd.service 
+● systemd-networkd.service - Network Configuration
+     Loaded: loaded (/lib/systemd/system/systemd-networkd.service; enabled; ven>
+     Active: active (running) since Fri 2023-09-15 09:26:24 UTC; 46min ago
+```
+
+So, this is supposed to work fine with netplan. Netplan config should be something like this:
+
+```yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    enp1s0:
+      dhcp4: no
+```
+
+as a yaml file in `/etc/netplan/` folder. The manpage netplan(5) covers a lot of infos.
+
+The `virsh net-dumpxml --network default` command says that the bridge default network has DHCP and distributes
+IP to all attached interface, from 2, up to 254. So I can just left this with `dhcp4: yes` and every machine will
+have a diffent ip, assigned in order of appeareance. But this is a problem when I am going to ssh: where?
+
+In fact the `bridge` staff hidden what is behind the virbr0 network, or this is what I see from `ip` utility.
+
+Anyway, in the guest image I put this file:
+
+```yaml
+## root@ubuntu:~# cat /etc/netplan/0-network.yaml 
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+   enp1s0:
+    routes:
+      - to: default
+        via: 192.168.122.1
+    addresses: [192.168.122.2/24]
+    dhcp4: no
+    nameservers:
+      addresses: [ 8.8.8.8 ]
+```
+
+then wherever I create a new image I just replace this (expecting that networkd would make the magic).
+
+#### A Friday retrospective
+
+I think I am a day later, but I gained some knowledge about bridge staff, that is far more complicated than 'a simple bridge' as I was used to think.
+
+Now I immagine a bridge like a box with a number of feature, like spanning tree protocol, dhcp, port forwarding, nat, ... all in a box called 'bridge', it is like a bridge with autogrills here and there.
+
+Also there is that netplan staff that is interesting, I always relayed on network manager and I did not know about systemd networkd staff, that replace it, and I think now it the time for NetworkManager to be discontinued altogher.
+
+That libvirt backup/snapshot/checkpoint staff is still stocked as a mess in my mind, but everything in libvirt talk xml,
+and it is well documented in the official website.
+
+`virsh` has a lot of staff, most of the time (every time?) 'edit' 'xmldump' is available for object handled by virsh.
+
+I must not forget to mention that qemu-guest-agent, from the package description:
+
+```
+ This package provides a daemon (agent) to run inside qemu-system
+ guests (full system emulation).  It communicates with the host using
+ a virtio-serial channel org.qemu.guest_agent.0, and allows one to perform
+ some functions in the guest from the host, including:
+  - querying and setting guest system time
+  - performing guest filesystem sync operation
+  - initiating guest shutdown or suspend to ram
+  - accessing guest files
+  - freezing/thawing guest filesystem operations
+  - others.
+```
+
+for sure there is:
+
+```
+:~/Development/all-by-my-host$ virsh qemu-agent-command --domain ubuntu-g1 '{"execute":"guest-network-get-interfaces"}'
+{"return":[{"name":"lo","ip-addresses":[{"ip-address-type":"ipv4","ip-address":"127.0.0.1","prefix":8},{"ip-address-type":"ipv6","ip-address":"::1","prefix":128}],"statistics":{"tx-packets":9408,"tx-errs":0,"rx-bytes":677438,"rx-dropped":0,"rx-packets":9408,"rx-errs":0,"tx-bytes":677438,"tx-dropped":0},"hardware-address":"00:00:00:00:00:00"},{"name":"enp1s0","ip-addresses":[{"ip-address-type":"ipv4","ip-address":"192.168.122.2","prefix":24},{"ip-address-type":"ipv6","ip-address":"fe80::5054:ff:fe3f:4baa","prefix":64}],"statistics":{"tx-packets":12242,"tx-errs":0,"rx-bytes":29714568,"rx-dropped":5791,"rx-packets":27919,"rx-errs":0,"tx-bytes":1488765,"tx-dropped":0},"hardware-address":"52:54:00:3f:4b:aa"}]}
+```
+
+also:
+
+```
+:~/Development/all-by-my-host$ virsh qemu-agent-command --domain ubuntu-g1 '{"execute":"guest-ssh-get-authorized-keys","arguments":{"username":"root"}}'
+{"return":{"keys":["ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDCT7uZ3E3giGIj6uf7ooyUUqS+VGUXNHga/mbpSmJ3un/UyhCAqWzCceheM/pWi1Q5EIp9n1CIy6yv299W9ReMsXSAeNjzJ7caMhYME7DSZXwrRfv3BWA/TcMfbiFOhrMCHfnt8mc3od9omhVyLTmaTqRhKGIVNg+JarBm6IUCMYY5ZB+wSB+byCE7Rwp5lKkTtej6ZFRB+nitjIPGEOVOXgkrtLXTxv3wlZXynazwJCSQlKUOuaJ4/ht4tqzAfzbHoBphFKz1TlgRCbWyNa4w7294+ex6GJ7+OhaPiXx2rReYk0Mqf6cjFEpspIlN4j2bC9Z/X7inyxmI0JViiEJ1 daniele@smartango.com"]}}
+```
+
+But I can not setup the network from outside. It makes sense someway.
 
 ## Network types
 
