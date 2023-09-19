@@ -491,11 +491,14 @@ network:
 
 then wherever I create a new image I just replace this (expecting that networkd would make the magic).
 
-#### A Friday retrospective
+#### A Friday retrospective (2023-09-15)
 
 I think I am a day later, but I gained some knowledge about bridge staff, that is far more complicated than 'a simple bridge' as I was used to think.
 
-Now I immagine a bridge like a box with a number of feature, like spanning tree protocol, dhcp, port forwarding, nat, ... all in a box called 'bridge', it is like a bridge with autogrills here and there.
+~~Now I immagine a bridge like a box with a number of feature, like spanning tree protocol, dhcp, port forwarding, nat, ... all in a box called 'bridge', it is like a bridge with autogrills here and there.~~
+`libvirt` packs the network interface definition, including the bridge name, ip address space, ip address of a router, dhcp service running in a (virtual) router, bandwidth, etc.
+
+A `bridge` is just a tap interface. `tap` is layer 2 (ethernet trafic), while `tun` is layer 3 (ip trafic).
 
 Also there is that netplan staff that is interesting, I always relayed on network manager and I did not know about systemd networkd staff, that replace it, and I think now it the time for NetworkManager to be discontinued altogher.
 
