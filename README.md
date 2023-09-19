@@ -538,6 +538,16 @@ also:
 
 But I can not setup the network from outside. It makes sense someway.
 
+## Automate machine image creation
+
+I spent this morning to automate image creation.
+
+The reason was that I ended with an image size too small, and I can not get a good way to resize.
+
+Also it may happens I need to start from a different image base (to import from debian image, for example), and I forgot all the step did so far.
+
+I create a dirty bash script, because code is the better documentation, even when it is not very clean.
+
 ## Network types
 
 First of all, the funny staff.
