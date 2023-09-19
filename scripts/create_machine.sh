@@ -95,10 +95,11 @@ sed -E 's/IPIPIPIP/'"$IPADDR"'/' netplantmpl/0-network.yaml > network.yaml
 MOUNTP=`pwd`/mnt
 sudo guestmount -a $IMGPATH -m /dev/sda1 --pid-file guestmount.pid -o allow_other $MOUNTP
 sudo cp network.yaml ./mnt/etc/netplan/0-network.yaml
+sudo cp netplantmpl/first_setup.sh ./mnt/root/first_setup.sh
 pid="$(cat guestmount.pid)"
 sudo guestunmount $MOUNTP
 
-timeout=10
+timeout=30
 
 count=$timeout
 
@@ -106,10 +107,21 @@ while kill -0 "$pid" 2>/dev/null && [ $count -gt 0 ]; do
     sleep 1
     ((count--))
 done
+sync
 
-CMD="sudo virt-install --connect qemu:///system --import --name $MACHINENAME --osinfo $OSINFO --memory 2048 --network bridge=virbr0,model=virtio --graphics none --disk path=$IMGPATH,size=4"
+CMD="sudo virt-install --connect qemu:///system --import --name $MACHINENAME --osinfo $OSINFO --memory 2048 --network bridge=virbr0,model=virtio --graphics none --disk path=$IMGPATH,size=4 --noautoconsole"
 
 # virt-install --osinfo list
 
 echo $CMD
 $CMD
+
+
+## needed in the guest (as root):
+#
+# ./first_setup.sh
+#
+## it is in netplantmpl/first_setup.sh
+## Then in the host:
+#
+# scripts/addauthorized_key.sh $MACHINAME

@@ -3,4 +3,5 @@
 !.gitignore
 !README.md
 !netplantmpl
-!*.yaml
+!netplantmpl/*.yaml
+!netplantmpl/*.sh
