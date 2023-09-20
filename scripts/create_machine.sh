@@ -93,9 +93,14 @@ IPADDR=192.168.122.$IPL
 
 sed -E 's/IPIPIPIP/'"$IPADDR"'/' netplantmpl/0-network.yaml > network.yaml
 MOUNTP=`pwd`/mnt
+
 sudo guestmount -a $IMGPATH -m /dev/sda1 --pid-file guestmount.pid -o allow_other $MOUNTP
+
 sudo cp network.yaml ./mnt/etc/netplan/0-network.yaml
 sudo cp netplantmpl/first_setup.sh ./mnt/root/first_setup.sh
+
+sudo sed -i s/ubuntu/$MACHINENAME/ ./mnt/etc/hostname
+
 pid="$(cat guestmount.pid)"
 sudo guestunmount $MOUNTP
 
