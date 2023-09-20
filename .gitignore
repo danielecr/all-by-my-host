@@ -5,3 +5,6 @@
 !netplantmpl
 !netplantmpl/*.yaml
 !netplantmpl/*.sh
+!networks
+!networks/*.xml
+!networks/*.md
