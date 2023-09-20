@@ -25,7 +25,7 @@ if test "$IMAGE" != "jammy" && test "$IMAGE" != "lunar" && test "$IMAGE" != "boo
  exit 0
 fi
 
-echo -e "create machine\nName: $MACHINENAME\nImage: $IMAGE\nProceed? [y/N]"
+echo -n -e "create machine\nName: $MACHINENAME\nImage: $IMAGE\nProceed? [y/N] "
 read X
 
 if test "$X" = "Y" || test "$X" = "y"; then

@@ -5,7 +5,7 @@ _domainname_1()
         if [ "${#COMP_WORDS[@]}" != "2" ]; then
                 return
         fi
-        COMPREPLY=`virsh list --name --all`
+        COMPREPLY=( $(compgen -W "$(virsh list --name --all)" "${COMP_WORDS[1]}") )
 }
 
 _imaganame_1()
@@ -13,7 +13,7 @@ _imaganame_1()
         if [ "${#COMP_WORDS[@]}" != "3" ]; then
                 return
         fi
-        COMPREPLY=( $(compgen -W "jammy lunar bookworm") )
+        COMPREPLY=( $(compgen -W "jammy lunar bookworm" "${COMP_WORDS[2]}") )
 }
 
 
