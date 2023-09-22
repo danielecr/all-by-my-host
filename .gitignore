@@ -1,7 +1,9 @@
 *
 !scripts
+!k8s-scripts
+!k8s-scripts/*.sh
 !.gitignore
-!README.md
+!*.md
 !netplantmpl
 !netplantmpl/*.yaml
 !netplantmpl/*.sh

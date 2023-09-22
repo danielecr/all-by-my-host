@@ -538,6 +538,27 @@ also:
 
 But I can not setup the network from outside. It makes sense someway.
 
+
+#### A Friday (second) retrospective (2023-09-22)
+
+This week I spent some time to automate some task. It was not easy to pick up what to automate and what not.
+I wanted to keep a balance between magic and awareness: of course there are a lot of tool that automate virtual machine
+creation, and this is not the scope of this learning sessions.
+
+Anyway keeping things inside simple bash script is a better reference.
+
+I also deal with image resize. Nothing worked but `qemu-img resize` command + `fdisk /dev/vda` + `resize2fs`.
+It sound dangerous, but it worked like a charm.
+
+Then I focused on kubernetes real creation. I learned kubeadm, kubectl, crictl, CRI installation (containerd), I had a quick
+look at firewall (I need to review and setup it better), and the CNI calico.
+
+I look at the exam process, what to purchase and how many retry I can do.
+
+I think I would take the CKA during the next week, not on Friday anyway, that would be an error.
+
+Still, I do not know how to shutdown my VMs without breaking k8s. I just make my laptop goes to sleep for the weekend (the control plane appears to consume 25-35% of my CPU!)
+
 ## Automate machine image creation
 
 I spent this morning to automate image creation.
@@ -557,6 +578,49 @@ First of all, the funny staff.
 is a convenient way to edit the `default`-named network (or any other name other than "default" that is defined).
 
 This similar to `kubectl edit ...`  class of commands, but here the definition is in XML.
+
+## TODO
+
+To explore more on network staff, I want to follow:
+
+* <https://lartc.org/howto/lartc.rpdb.multiple-links.html>
+
+Reference: <http://linux-ip.net/gl/ip-cref/>
+
+https://www.kernel.org/doc/html/v5.8/networking/tuntap.html
+https://www.cnblogs.com/zengkefu/p/5635100.html
+
+```
+modprobe sch_htb
+tc qdisc add dev eth0 root handle 1:0 htb
+tc class add dev eth0 parent 1:0 classid 1:1 htb rate 100mbit
+tc class add dev eth0 parent 1:1 classid 1:1000 htb rate 500Kbit ceil 1000Kbit
+tc filter add dev eth0 parent 1:0 protocol ip prio 1 u32 match ip src 109.11.28.2 flowid 1:1000
+```
+
+https://backreference.org/2010/03/26/tuntap-interface-tutorial/
+
+### raid exercise
+
+Use mdadm to create a raid (inside a VM):
+https://www.alibabacloud.com/help/en/ecs/use-cases/create-a-raid-array-for-a-linux-instance
+(it means attach more disk device to the same VM)
+
+### LVM excercise
+
+create LVM https://www.alibabacloud.com/help/en/ecs/use-cases/use-lvm-to-create-a-logical-volume
+
+Also https://philpep.org/blog/debian-vm-on-lvm-with-cloud-init/ convert:
+
+```sh
+$ wget https://cdimage.debian.org/cdimage/cloud/buster/daily/20200502-251/debian-10-genericcloud-amd64-daily-20200502-251.qcow2
+$ lvcreate -n debian10 -T vg/thin -V2G
+$ qemu-img convert debian-10-genericcloud-amd64-daily-20200502-251.qcow2 -O raw /dev/mapper/vg-debian10
+```
+
+> $ virt-sparsify --in-place /dev/mapper/vg-debian10
+
+performance comparition: <https://docs.ispsystem.com/vmmanager-kvm/virtual-disk-storage-configuration/comparing-performance-of-local-storages>
 
 
 ## Side project
