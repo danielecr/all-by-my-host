@@ -559,6 +559,40 @@ I think I would take the CKA during the next week, not on Friday anyway, that wo
 
 Still, I do not know how to shutdown my VMs without breaking k8s. I just make my laptop goes to sleep for the weekend (the control plane appears to consume 25-35% of my CPU!)
 
+#### A Monday prospective (2023-09-25)
+
+I have a k3s installed on some raspberry pi, those stops to works for some problem I did not understand at that time:
+now it is a good time to solve those problem as a preparation step for CKA certification (k3s is not strictly k8s,
+it is a rancher flavour of it, and I must be able to fix it)
+
+The main target for this week is to earn a CKA certification, from the exams page:
+
+* cluster architecture, installation & configuration 25%
+* service & networking 20%
+* storage 10%
+* workloads & scheduling 15%
+* troubleshooting 30%
+
+(I rearranged in order of studing)
+
+The target is to purchase the exam and run a simulation by Wednesday, then do the exam in some morning, it depends from
+the simulation feedbacks.
+
+Some interesting resources (also, maybe later):
+
+https://training.linuxfoundation.org/training/introduction-to-cilium-lfs146x/
+https://training.linuxfoundation.org/training/introduction-to-istio-lfs144x/
+
+https://training.linuxfoundation.org/training/introduction-to-kubernetes/
+
+
+https://training.linuxfoundation.org/training/introduction-to-linux/
+
+https://training.linuxfoundation.org/training/introduction-to-devops-and-site-reliability-engineering-lfs162/
+https://training.linuxfoundation.org/training/introduction-to-jenkins-lfs167/
+https://training.linuxfoundation.org/training/jenkins-essentials-lfs267/
+https://training.linuxfoundation.org/training/ci-cd-with-jenkins-x-lfs268/
+
 ## Automate machine image creation
 
 I spent this morning to automate image creation.
