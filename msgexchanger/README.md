@@ -47,3 +47,15 @@ I pushed my image on docker hub, it is a quick test.
 
 Nope. My initial idea was wrong. IPC is allowed for containers belonging to the same pod,
 no matter if they have / do-not-have the same pid namespace.
+
+The evidence `kubectl logs msgpass msgpass1`:
+
+```text
+No message available for msgrcv()
+No message available for msgrcv()
+No message available for msgrcv()
+message received: a message at Thu Sep 28 11:24:15 2023
+
+No message available for msgrcv()
+No message available for msgrcv()
+```
