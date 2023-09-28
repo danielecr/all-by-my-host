@@ -613,6 +613,18 @@ is a convenient way to edit the `default`-named network (or any other name other
 
 This similar to `kubectl edit ...`  class of commands, but here the definition is in XML.
 
+### Network Troubleshooting (firewall)
+
+My ignorance on network field must be fixed. A unode stopped to go out. virbr0 was isolated
+
+> sudo sysctl net.ipv4.ip_forward=1
+> sudo iptables -A FORWARD -o virbr0 -j ACCEPT
+> sudo iptables -t nat -A POSTROUTING --out-interface enp8s0 -j MASQUERADE
+
+fixed the problem. But what is FORWARD? POSTROUTING? Filtering? I need to understand
+
+see also `nft` command.
+
 ## TODO
 
 To explore more on network staff, I want to follow:

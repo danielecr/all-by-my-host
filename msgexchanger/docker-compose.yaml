@@ -1,0 +1,20 @@
+version: "3.2"
+
+services:
+  msg-receiver:
+    image: messagepassingipc
+    command: /receiver.sh
+    networks:
+      - sswapinet
+
+  msg-sender:
+    image: messagepassingipc
+    command: /sender.sh
+    networks:
+      - sswapinet
+
+
+networks:
+  sswapinet:
+    external: true
+

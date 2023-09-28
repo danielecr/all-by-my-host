@@ -10,3 +10,5 @@
 !networks
 !networks/*.xml
 !networks/*.md
+!msgexchanger
+!msgexchanger/*
