@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: msgpass
+spec:
+  containers:
+  - name: msgpass1
+    image: danielecr/msgexchange:v0.1
+    imagePullPolicy: Always
+    command: ['/receiver.sh']
+    ports:
+    - containerPort: 80
+  - name: msgpass2
+    image: danielecr/msgexchange:v0.1
+    imagePullPolicy: Always
+    command: ['/sender.sh']
+    ports:
+    - containerPort: 80
