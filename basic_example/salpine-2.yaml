@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: salpine2
+spec:
+  containers:
+  - name: salpine2
+    image: alpine:latest
+    command: ['sh', '-c', 'echo "I m alive!" && sleep 1400']
+    ports:
+    - containerPort: 80
+  - name: salpine3
+    image: alpine:latest
+    command: ['sh', '-c', 'echo "I m alive!" && sleep 1400']
+    ports:
+    - containerPort: 80

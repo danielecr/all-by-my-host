@@ -12,3 +12,5 @@
 !networks/*.md
 !msgexchanger
 !msgexchanger/*
+!basic_example/
+!basic_example/*

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myalpine
+spec:
+  containers:
+  - name: myalpine
+    image: alpine:latest
+    command: ['sh', '-c', 'echo "I m alive!" && sleep 1400']
+    ports:
+    - containerPort: 80
