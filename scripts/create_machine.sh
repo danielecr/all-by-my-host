@@ -116,6 +116,9 @@ sync
 
 CMD="sudo virt-install --connect qemu:///system --import --name $MACHINENAME --osinfo $OSINFO --memory 2048 --network bridge=virbr0,model=virtio --graphics none --disk path=$IMGPATH,size=4 --noautoconsole"
 
+
+## virt-install --connect qemu:///system --import --name ucontrol2 --osinfo ubuntu23.04 --memory 2048 --network bridge=virbr0,model=virtio --graphics none --disk path=/home/daniele/Development/all-by-my-host/running_img/jammy-bookworm.img,size=4 --noautoconsole --print-xml --print-xml --dry-run
+
 # virt-install --osinfo list
 
 echo $CMD
