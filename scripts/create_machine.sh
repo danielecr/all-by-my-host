@@ -55,6 +55,8 @@ case "$IMAGE" in
         ;;
 esac
 
+SRCFILENAME=upstream-img/$SRCFILENAME
+
 #echo -e "copying $SRCFILENAME into running_img/$DSTIMGNAME"
 
 IMGPATH=`pwd`/running_img/$DSTIMGNAME
